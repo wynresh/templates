@@ -78,9 +78,21 @@ backend/
 ├── node_modules/
 ├── src/
 │   │
+│   ├── controllers
+│   │   │
+│   │   ├── sign.controllers.ts
+│   │   └── user.controllers.ts
+│   │
 │   ├── models/
 │   │   │
-│   │   └──root.models.ts
+│   │   ├── user.models.ts
+│   │   └── root.models.ts
+│   │
+│   ├── services
+│   │   │
+│   │
+│   ├── utils
+│   │
 ├── .env
 ├── .env.example
 ├── .gitignore
@@ -130,9 +142,137 @@ added 1 package, and audited 86 packages in 3s
 
 found 0 vulnerabilities
 
+
+# installer zod pour appliquer une validation sur les champs de donné
+$ npm install zod   
+
+added 1 package, and audited 87 packages in 3s
+
+12 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+
+# installer mongoose-paginate-v2 pour la pagination
+$ npm install mongoose-paginate-v2
+
+added 3 packages, and audited 90 packages in 3s
+
+12 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+
+# installer bcrypt pour hasher le mot de pass
+$ npm install bcrypt
+npm install --save-dev @types/bcrypt
+
+added 3 packages, and audited 94 packages in 6s
+
+12 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+added 1 package, and audited 95 packages in 3s
+
+12 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+
+# installer libphonenumber-js pour validé le numero et le formater
+$ npm install libphonenumber-js   
+
+added 1 package, and audited 91 packages in 7s
+
+12 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+
+# installer express pour le server
+$ npm install express      
+npm install --save-dev @types/express        
+
+added 59 packages, and audited 154 packages in 5s
+
+33 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+
+# installer nodemailer pour les service mail
+$ npm install nodemailer
+npm install --save-dev @types/nodemailer
+
+
+#installer jsonwebtoken pour la gestion des token
+$ npm install jsonwebtoken
+npm install --save-dev @types/jsonwebtoken              
+
+added 15 packages in 3s
+
+1 package is looking for funding
+  run `npm fund` for details
+
+
 ```
 
+9- generer un secret code
 
+```bash
+$ openssl rand -hex 64
+```
+
+10 - contenus des fichiers et dossiers
+
+10.1 - Models: dir
+
+
+```ts
+// ======================
+// file: root.models.ts
+// Root Models: 
+// 
+// configuration commune à tous les modèles Mongoose pour utiliser id au lieu de _id,
+// et pour configurer la sérialisation JSON et Object.
+// ======================
+
+import { Schema } from "mongoose";
+
+const root = (schema: Schema) => {
+    // Virtual id
+    schema.virtual("id").get(function (this: Document & { _id: any }) {
+        return this._id.toHexString();
+    });
+
+    // toJSON config
+    schema.set("toJSON", {
+        virtuals: true,
+        versionKey: false,
+        transform: (_, ret) => {
+            delete ret._id;  // masquer _id
+        },
+    });
+
+    // toObject config (optional)
+    schema.set("toObject", {
+        virtuals: true,
+        versionKey: false,
+    });
+};
+
+export default root;
+
+
+
+```
 
 
 
