@@ -212,7 +212,7 @@ $ npm install nodemailer
 npm install --save-dev @types/nodemailer
 
 
-#installer jsonwebtoken pour la gestion des token
+# installer jsonwebtoken pour la gestion des token
 $ npm install jsonwebtoken
 npm install --save-dev @types/jsonwebtoken              
 
@@ -222,6 +222,45 @@ added 15 packages in 3s
   run `npm fund` for details
 
 
+# installer qrcode pour generer une image qrcode pour google authenticator
+$ npm install speakeasy qrcode
+npm install --save-dev @types/qrcode
+
+
+added 31 packages, and audited 212 packages in 7s
+
+36 packages are looking for funding
+  run `npm fund` for details
+
+5 vulnerabilities (1 low, 4 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+
+
+# installer speakeasy pour generer le code secret pour google authenticator
+$ npm install speakeasy speakeasy
+npm install --save-dev @types/speakeasy
+
+up to date, audited 212 packages in 1s
+
+36 packages are looking for funding
+  run `npm fund` for details
+
+5 vulnerabilities (1 low, 4 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
 ```
 
 9- generer un secret code
