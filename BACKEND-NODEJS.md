@@ -83,29 +83,40 @@ backend/
 │   │   ├── sign.controllers.ts
 │   │   └── user.controllers.ts
 │   │
+│   ├── middlewares
+│   │   │
+│   │   ├── auth.middlewares.ts
+│   │   ├── permission.middlewares.ts
+│   │   ├── requiredfields.middlewares.ts
+│   │   └── validators.middlewares.ts
+│   │
 │   ├── models/
 │   │   │
 │   │   ├── user.models.ts
 │   │   └── root.models.ts
 │   │
+│   ├── routes
+│   │   │
+│   │   ├── auth.routes.ts
+│   │   └── user.routes.ts
+│   │
 │   ├── services
 │   │   │
 │   │
 │   ├── utils
+│   │   │
 │   │
+│   ├── config.ts
+│   ├── database.ts
+│   └── type.d.ts
+│
 ├── .env
 ├── .env.example
 ├── .gitignore
 ├── package-lock.json
 ├── package.json
 ├── README.md
-├── tsconfig.json
-├──
-├──
-├──
-├──
-├──
-└──
+└── tsconfig.json
 ```
 
 7 - Ajouter des scripts dans package.json
