@@ -2178,3 +2178,1595 @@ class ContactTile extends StatelessWidget {
 ### Suppression d'un contact du modèle de contact
 
 ```dart
+// widget/contact.dart
+
+import 'package:data/contact.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+
+
+class ContactTile extends StatelessWidget {
+  const ContactTile({
+    super.key,
+    required this.contactIndex,
+  });
+
+  final int contactIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return ScopedModelDescendant<ContactModel>(
+      builder: (context, child, model) {
+        final displayedContact = model.contacts[contactIndex];
+
+        return slidable(
+          delegate: SlidableBehindDeletage(),
+          secondaryActions: <Widget>[
+            IconSlideAction(
+              caption: 'Delete',
+              color: Colors.red,
+              icon: Icon(Icons.delete),
+              onTap: () {
+                model.deletedContact(contactIndex);
+              }
+            )
+          ],
+          child: _buildContent(
+            context, 
+            displayedContact, 
+            model
+          )
+        );
+      }
+    );
+  }
+
+  Container _buildContent(BuildContext context, Contact displayedContact, ContactModel model) {
+    return Container(
+      color: Theme.of(context).canvasColor,
+      child: ListTile(
+        title: Text(displayedContact.name),
+        subtitle: Text(displayedContact.email),
+        trailing: IconButton(
+          onPressed: () {
+            model.changeFavoriteStatus(contactIndex);
+          },
+
+          icon: Icon(
+            displayedContact.isFavorite ? Icons.star : Icons.star_border,
+            color:  displayedContact.isFavorite ? Colors.amber : Colors.grey,
+          )
+        ),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ContactUpdatePage(
+                updatedContact: displayedContact, 
+                updatedConatctIndex: contactIndex
+              )
+            )
+          );
+        },
+      )
+    );
+  }
+}
+
+
+// models/contact_model.dart
+
+import 'package:scoped_model/scoped_model.dart';
+import 'package:data/contact';
+
+
+class ContactModel extends Model with ChangeNotifier {
+  final List<Contact> _contacts = List.generate(50, (index) {
+    return Contact(
+      name: 'Victor', 
+      email: 'victorvaddely@gmail.com',
+      phone: '2215579652'
+    );
+  });
+
+  List<Contact> get contacts => _contacts;
+
+  void changeFavoriteStatus(int index) {
+    _contacts[index].isFavorite = !_contacts[index].isFavorite;
+
+    _sortContacts();
+    notifyListeners();
+  }
+
+  void _sortContacts() {
+    _contacts.sort((a, b) {
+      int comparisonResult;
+      
+      comparisonResult = _compareBaseOnFavoriteStatus(a, b);
+
+      if (comparisonResult == 0) {
+        comparisonResult = _compareAlphabetically(a, b);
+      }
+
+      return comparisonResult;
+    });
+  }
+
+
+  void addContact(Contact contact) {
+    _contacts.add(contact);
+    notifyListeners();
+  }
+
+  void deletedContact(int index) {
+    _contacts.removeAt(index);
+    notifyListeners();
+  }
+
+  void updatedContact(Contact contact, int contactIndex) {
+    _contacts[contactIndex] = contact;
+    notifyListeners();
+  }
+
+  int _compareBaseOnFavoriteStatus(Contact a, Contact b) {
+    if (a.isFavorite) {
+      return -1;
+    } else if (b.isFavorite) {
+      return 1;
+    }
+    return 0;
+  }
+
+  int _compareAlphabetically(Contact a, Contact b) {
+    return a.name.compareTo(b.name);
+  }
+}
+```
+
+### Ajout d'images par défaut pour les contacts
+
+```dart
+// widget/contact.dart
+
+import 'package:data/contact.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+
+
+class ContactTile extends StatelessWidget {
+  const ContactTile({
+    super.key,
+    required this.contactIndex,
+  });
+
+  final int contactIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return ScopedModelDescendant<ContactModel>(
+      builder: (context, child, model) {
+        final displayedContact = model.contacts[contactIndex];
+
+        return slidable(
+          delegate: SlidableBehindDeletage(),
+          secondaryActions: <Widget>[
+            IconSlideAction(
+              caption: 'Delete',
+              color: Colors.red,
+              icon: Icon(Icons.delete),
+              onTap: () {
+                model.deletedContact(contactIndex);
+              }
+            )
+          ],
+          child: _buildContent(
+            context, 
+            displayedContact, 
+            model
+          )
+        );
+      }
+    );
+  }
+
+  Container _buildContent(BuildContext context, Contact displayedContact, ContactModel model) {
+    return Container(
+      color: Theme.of(context).canvasColor,
+      child: ListTile(
+        title: Text(displayedContact.name),
+        subtitle: Text(displayedContact.email),
+        leading: CircleAvatar(
+          child: Text(displayedContact.name[0]),
+        ),
+        trailing: IconButton(
+          onPressed: () {
+            model.changeFavoriteStatus(contactIndex);
+          },
+
+          icon: Icon(
+            displayedContact.isFavorite ? Icons.star : Icons.star_border,
+            color:  displayedContact.isFavorite ? Colors.amber : Colors.grey,
+          )
+        ),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ContactUpdatePage(
+                updatedContact: displayedContact, 
+                updatedConatctIndex: contactIndex
+              )
+            )
+          );
+        },
+      )
+    );
+  }
+}
+
+// ui/form
+
+import 'package:libphonenumber/libphonenumber.dart';
+
+
+class ContatctForm extends StatefulWidget {
+  final Contact? updatedContact;
+  final int? updatedConatctIndex;
+
+  const ContatctForm({
+    super.key,
+    this.updatedContact,
+    this.updatedConatctIndex
+  });
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _ContactFormState createState() => _ContactFormState();
+}
+
+
+class _ContactFormState extends State<ContatctForm> {
+  final _formKey = GlobalKey<FormState>();
+
+  final _emailController = TextEditingController();
+
+  String? _name;
+  String? _email;
+  String? _phone;
+
+  bool get isUpdatedMode => widget.updatedContact != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.addListener(() {
+      // Validation en temps réel
+      _email = _emailController.text;
+      // Faire quelque chose avec l'email
+    });
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+
+  String? _validateName(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer un Nom';
+    }
+
+    if (value.length <= 4) {
+      return 'le Nom doit etre d\'au moins 4 lettre';
+    }
+    return null; // Retourner null signifie que la validation a réussi
+  }
+  
+
+  String? _validateEmail(String? value) {
+    final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer un Email';
+    }
+    
+    if (!emailRegExp.hasMatch(value)) {
+      return 'Veuillez entrer un email valide';
+    }
+
+    return null;
+  }
+
+
+  String? _validatePhone(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Le téléphone est requis';
+    }
+  
+    // Pour la France (FR)
+    bool isValid = PhoneNumberUtil.isValidPhoneNumber(
+      phoneNumber: value,
+      isoCode: 'FR',
+    );
+  
+    if (!isValid) {
+      return 'Numéro de téléphone invalide';
+    }
+  
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: _formKey,
+      child: ListView(
+        children: <Widget>[
+          SizedBox(
+            height: 10,
+          ),
+
+          _buildContactPicture(),
+
+          SizedBox(
+            height: 10,
+          ),
+          
+          TextFormField(
+            onSaved: (value) => _name = value,
+            validator: _validateName,
+            initialValue: widget.updatedContact?.name,
+            
+            decoration: InputDecoration(
+              labelText: 'Name',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5)
+              ),
+              prefixIcon: Icon(Icons.person),
+            ),
+          ),
+          
+          SizedBox(
+            height: 10,
+          ),
+          
+          TextFormField(
+            controller: _emailController,
+            validator: _validateEmail,
+            onSaved: (value) => _email = value,
+            initialValue: widget.updatedContact?.email,
+            
+            decoration: InputDecoration(
+              labelText: 'Email',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5)
+              ),
+              prefixIcon: Icon(Icons.email),
+              hintText: 'exemple@domaine.com',
+            ),
+            
+            keyboardType: TextInputType.emailAddress,
+          ),
+          
+          SizedBox(
+            height: 10,
+          ),
+          
+          TextFormField(
+            validator: _validatePhone,
+            onSaved: (value) => _phone = value,
+            initialValue: widget.updatedContact?.phone,
+            
+            decoration: InputDecoration(
+              labelText: 'Phone',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5)
+              ),
+              prefixIcon: Icon(Icons.phone),
+              hintText: '+2250612345678',
+            ),
+            
+            keyboardType: TextInputType.phone,
+          ),
+          
+          SizedBox(
+            height: 10,
+          ),
+          
+          ElevatedButton(
+            onPressed: _onSaveContactButtonPressed,
+            
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              minimumSize: Size(double.infinity, 50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.person, 
+                  size: 18,
+                ),
+                Text(
+                  'Create Contact',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18
+                  ),
+                ),
+              ]
+            )
+          )
+        ],
+      )
+    );
+  }
+
+  Widget _buildContactPicture() {
+    final halfScreenDiameter = MediaQuery.of(context).size.width / 2;
+    
+    return CircleAvatar(
+      radius: halfScreenDiameter / 2,
+      child: _buildCircleAvatrContent(halfScreenDiameter)
+    );
+  }
+
+  Widget _buildCircleAvatrContent(double halfScreenDiameter) {
+    if (isUpdatedMode) {
+      return Text(
+        widget.updatedContact!.name[0],
+        style: TextStyle(
+          fontSize: halfScreenDiameter / 2
+        ),
+      );
+    } else {
+      return Icon(
+        Icons.person, 
+        size: halfScreenDiameter / 2,
+      );
+    }
+    
+  }
+
+  void _onSaveContactButtonPressed() {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Contact créé avec succès!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      final newContact = Contact(
+        name: _name!, 
+        email: _email!, 
+        phone: _phone!,
+        isFavorite: widget.updatedContact?.isFavorite ?? false
+      );
+
+      if (isUpdatedMode) {
+        ScopedModel.of<ContactModel>(context).addContact(
+          newContact,
+          widget.updatedConatctIndex
+        );
+      } else {
+        ScopedModel.of<ContactModel>(context).addContact(newContact);
+      }
+
+      // revenir a la page precedente
+      Navigator.of(context).pop();
+                
+      // ignore: avoid_print
+      print('Name: $_name, Email: $_email, Phone: $_phone');
+    }
+  }
+}
+```
+
+### Création d'une animation de héros
+
+```dart
+// widget/contact.dart
+
+import 'package:data/contact.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+
+
+class ContactTile extends StatelessWidget {
+  const ContactTile({
+    super.key,
+    required this.contactIndex,
+  });
+
+  final int contactIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return ScopedModelDescendant<ContactModel>(
+      builder: (context, child, model) {
+        final displayedContact = model.contacts[contactIndex];
+
+        return slidable(
+          delegate: SlidableBehindDeletage(),
+          secondaryActions: <Widget>[
+            IconSlideAction(
+              caption: 'Delete',
+              color: Colors.red,
+              icon: Icon(Icons.delete),
+              onTap: () {
+                model.deletedContact(contactIndex);
+              }
+            )
+          ],
+          child: _buildContent(
+            context, 
+            displayedContact, 
+            model
+          )
+        );
+      }
+    );
+  }
+
+  Container _buildContent(BuildContext context, Contact displayedContact, ContactModel model) {
+    return Container(
+      color: Theme.of(context).canvasColor,
+      child: ListTile(
+        title: Text(displayedContact.name),
+        subtitle: Text(displayedContact.email),
+        leading: _buildCircleAvatr(displayedContact),
+        trailing: IconButton(
+          onPressed: () {
+            model.changeFavoriteStatus(contactIndex);
+          },
+
+          icon: Icon(
+            displayedContact.isFavorite ? Icons.star : Icons.star_border,
+            color:  displayedContact.isFavorite ? Colors.amber : Colors.grey,
+          )
+        ),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ContactUpdatePage(
+                updatedContact: displayedContact, 
+                updatedConatctIndex: contactIndex
+              )
+            )
+          );
+        },
+      )
+    );
+  }
+
+  Widget _buildCircleAvatr(Contact displayedContact) {
+    return Hero(
+      tag: displayedContact.hashCode,
+      child: CircleAvatar(
+        child: Text(
+          displayedContact.name[0]
+        ),
+      ),
+    ); 
+  }
+}
+
+// ui/form
+
+import 'package:libphonenumber/libphonenumber.dart';
+
+
+class ContatctForm extends StatefulWidget {
+  final Contact? updatedContact;
+  final int? updatedConatctIndex;
+
+  const ContatctForm({
+    super.key,
+    this.updatedContact,
+    this.updatedConatctIndex
+  });
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _ContactFormState createState() => _ContactFormState();
+}
+
+
+class _ContactFormState extends State<ContatctForm> {
+  final _formKey = GlobalKey<FormState>();
+
+  final _emailController = TextEditingController();
+
+  String? _name;
+  String? _email;
+  String? _phone;
+
+  bool get isUpdatedMode => widget.updatedContact != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.addListener(() {
+      // Validation en temps réel
+      _email = _emailController.text;
+      // Faire quelque chose avec l'email
+    });
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+
+  String? _validateName(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer un Nom';
+    }
+
+    if (value.length <= 4) {
+      return 'le Nom doit etre d\'au moins 4 lettre';
+    }
+    return null; // Retourner null signifie que la validation a réussi
+  }
+  
+
+  String? _validateEmail(String? value) {
+    final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer un Email';
+    }
+    
+    if (!emailRegExp.hasMatch(value)) {
+      return 'Veuillez entrer un email valide';
+    }
+
+    return null;
+  }
+
+
+  String? _validatePhone(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Le téléphone est requis';
+    }
+  
+    // Pour la France (FR)
+    bool isValid = PhoneNumberUtil.isValidPhoneNumber(
+      phoneNumber: value,
+      isoCode: 'FR',
+    );
+  
+    if (!isValid) {
+      return 'Numéro de téléphone invalide';
+    }
+  
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: _formKey,
+      child: ListView(
+        children: <Widget>[
+          SizedBox(
+            height: 10,
+          ),
+
+          _buildContactPicture(),
+
+          SizedBox(
+            height: 10,
+          ),
+          
+          TextFormField(
+            onSaved: (value) => _name = value,
+            validator: _validateName,
+            initialValue: widget.updatedContact?.name,
+            
+            decoration: InputDecoration(
+              labelText: 'Name',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5)
+              ),
+              prefixIcon: Icon(Icons.person),
+            ),
+          ),
+          
+          SizedBox(
+            height: 10,
+          ),
+          
+          TextFormField(
+            controller: _emailController,
+            validator: _validateEmail,
+            onSaved: (value) => _email = value,
+            initialValue: widget.updatedContact?.email,
+            
+            decoration: InputDecoration(
+              labelText: 'Email',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5)
+              ),
+              prefixIcon: Icon(Icons.email),
+              hintText: 'exemple@domaine.com',
+            ),
+            
+            keyboardType: TextInputType.emailAddress,
+          ),
+          
+          SizedBox(
+            height: 10,
+          ),
+          
+          TextFormField(
+            validator: _validatePhone,
+            onSaved: (value) => _phone = value,
+            initialValue: widget.updatedContact?.phone,
+            
+            decoration: InputDecoration(
+              labelText: 'Phone',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5)
+              ),
+              prefixIcon: Icon(Icons.phone),
+              hintText: '+2250612345678',
+            ),
+            
+            keyboardType: TextInputType.phone,
+          ),
+          
+          SizedBox(
+            height: 10,
+          ),
+          
+          ElevatedButton(
+            onPressed: _onSaveContactButtonPressed,
+            
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              minimumSize: Size(double.infinity, 50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.person, 
+                  size: 18,
+                ),
+                Text(
+                  'Create Contact',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18
+                  ),
+                ),
+              ]
+            )
+          )
+        ],
+      )
+    );
+  }
+
+  Widget _buildContactPicture() {
+    final halfScreenDiameter = MediaQuery.of(context).size.width / 2;
+    
+    return Hero(
+      tag: widget.updatedContact?.hashCode ?? 0, 
+      child: CircleAvatar(
+        radius: halfScreenDiameter / 2,
+        child: _buildCircleAvatrContent(halfScreenDiameter)
+      ),
+    );
+  }
+
+  Widget _buildCircleAvatrContent(double halfScreenDiameter) {
+    if (isUpdatedMode) {
+      return Text(
+        widget.updatedContact!.name[0],
+        style: TextStyle(
+          fontSize: halfScreenDiameter / 2
+        ),
+      );
+    } else {
+      return Icon(
+        Icons.person, 
+        size: halfScreenDiameter / 2,
+      );
+    }
+    
+  }
+
+  void _onSaveContactButtonPressed() {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Contact créé avec succès!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      final newContact = Contact(
+        name: _name!, 
+        email: _email!, 
+        phone: _phone!,
+        isFavorite: widget.updatedContact?.isFavorite ?? false
+      );
+
+      if (isUpdatedMode) {
+        ScopedModel.of<ContactModel>(context).addContact(
+          newContact,
+          widget.updatedConatctIndex
+        );
+      } else {
+        ScopedModel.of<ContactModel>(context).addContact(newContact);
+      }
+
+      // revenir a la page precedente
+      Navigator.of(context).pop();
+                
+      // ignore: avoid_print
+      print('Name: $_name, Email: $_email, Phone: $_phone');
+    }
+  }
+}
+
+```
+
+## Configuration de la bibliothèque de sélection d'images
+
+```dart
+
+// on recherche image picker sur le site de flutter
+// et comme dab on ajoute sa version au fichier pubspec.yaml
+
+// puis dans ios/runner/info.plist on ajout
+// <key>NSPhotoLibraryUsageDescription<key/>
+// <string>This app needs to access the photo library for adding contact picture.<string/> 
+// <key>NSCaremaUsageDescription<key/>
+// <string>This app needs to access for taking camera picture <string/>
+
+// data/contact.dart
+
+import 'package:meta/meta.dart';
+
+class Contact {
+  String name;
+  String email;
+  String phone;
+  bool isFavorite;
+  File? imageFile;
+
+  Contact({
+    required this.name,
+    required this.email,
+    required this.phone,
+    this.isFavorite = false,
+    this.imageFile,
+  });
+}
+
+
+// widget/contact.dart
+
+import 'package:data/contact.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+
+
+class ContactTile extends StatelessWidget {
+  const ContactTile({
+    super.key,
+    required this.contactIndex,
+  });
+
+  final int contactIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return ScopedModelDescendant<ContactModel>(
+      builder: (context, child, model) {
+        final displayedContact = model.contacts[contactIndex];
+
+        return slidable(
+          delegate: SlidableBehindDeletage(),
+          secondaryActions: <Widget>[
+            IconSlideAction(
+              caption: 'Delete',
+              color: Colors.red,
+              icon: Icon(Icons.delete),
+              onTap: () {
+                model.deletedContact(contactIndex);
+              }
+            )
+          ],
+          child: _buildContent(
+            context, 
+            displayedContact, 
+            model
+          )
+        );
+      }
+    );
+  }
+
+  Container _buildContent(BuildContext context, Contact displayedContact, ContactModel model) {
+    return Container(
+      color: Theme.of(context).canvasColor,
+      child: ListTile(
+        title: Text(displayedContact.name),
+        subtitle: Text(displayedContact.email),
+        leading: _buildCircleAvatr(displayedContact),
+        trailing: IconButton(
+          onPressed: () {
+            model.changeFavoriteStatus(contactIndex);
+          },
+
+          icon: Icon(
+            displayedContact.isFavorite ? Icons.star : Icons.star_border,
+            color:  displayedContact.isFavorite ? Colors.amber : Colors.grey,
+          )
+        ),
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ContactUpdatePage(
+                updatedContact: displayedContact, 
+                updatedConatctIndex: contactIndex
+              )
+            )
+          );
+        },
+      )
+    );
+  }
+
+  Widget _buildCircleAvatr(Contact displayedContact) {
+    return Hero(
+      tag: displayedContact.hashCode,
+      child: CircleAvatar(
+        child: _buildCircleAvatarContent(displayedContact),
+      ),
+    ); 
+  }
+
+  Widget _buildCircleAvatarContent(Contact displayedContact) {
+    if (displayedContact.imageFile == null) {
+      return Text(
+        displayedContact.name[0]
+      );
+    } else {
+      return ClipOval(
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: Image.file(
+            displayedContact.imageFile!,
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    }
+    
+  }
+}
+
+// ui/form
+
+import 'package:libphonenumber/libphonenumber.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+
+
+class ContatctForm extends StatefulWidget {
+  final Contact? updatedContact;
+  final int? updatedConatctIndex;
+
+  const ContatctForm({
+    super.key,
+    this.updatedContact,
+    this.updatedConatctIndex
+  });
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _ContactFormState createState() => _ContactFormState();
+}
+
+
+class _ContactFormState extends State<ContatctForm> {
+  final _formKey = GlobalKey<FormState>();
+
+  final _emailController = TextEditingController();
+
+  String? _name;
+  String? _email;
+  String? _phone;
+  File? _contactImageFile;
+
+  bool get isUpdatedMode => widget.updatedContact != null;
+  bool get hasSelectedCustomImage => _contactImageFile != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.addListener(() {
+      // Validation en temps réel
+      _email = _emailController.text;
+      // Faire quelque chose avec l'email
+    });
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+
+  String? _validateName(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer un Nom';
+    }
+
+    if (value.length <= 4) {
+      return 'le Nom doit etre d\'au moins 4 lettre';
+    }
+    return null; // Retourner null signifie que la validation a réussi
+  }
+  
+
+  String? _validateEmail(String? value) {
+    final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer un Email';
+    }
+    
+    if (!emailRegExp.hasMatch(value)) {
+      return 'Veuillez entrer un email valide';
+    }
+
+    return null;
+  }
+
+
+  String? _validatePhone(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Le téléphone est requis';
+    }
+  
+    // Pour la France (FR)
+    bool isValid = PhoneNumberUtil.isValidPhoneNumber(
+      phoneNumber: value,
+      isoCode: 'FR',
+    );
+  
+    if (!isValid) {
+      return 'Numéro de téléphone invalide';
+    }
+  
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: _formKey,
+      child: ListView(
+        children: <Widget>[
+          SizedBox(
+            height: 10,
+          ),
+
+          _buildContactPicture(),
+
+          SizedBox(
+            height: 10,
+          ),
+          
+          TextFormField(
+            onSaved: (value) => _name = value,
+            validator: _validateName,
+            initialValue: widget.updatedContact?.name,
+            
+            decoration: InputDecoration(
+              labelText: 'Name',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5)
+              ),
+              prefixIcon: Icon(Icons.person),
+            ),
+          ),
+          
+          SizedBox(
+            height: 10,
+          ),
+          
+          TextFormField(
+            controller: _emailController,
+            validator: _validateEmail,
+            onSaved: (value) => _email = value,
+            initialValue: widget.updatedContact?.email,
+            
+            decoration: InputDecoration(
+              labelText: 'Email',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5)
+              ),
+              prefixIcon: Icon(Icons.email),
+              hintText: 'exemple@domaine.com',
+            ),
+            
+            keyboardType: TextInputType.emailAddress,
+          ),
+          
+          SizedBox(
+            height: 10,
+          ),
+          
+          TextFormField(
+            validator: _validatePhone,
+            onSaved: (value) => _phone = value,
+            initialValue: widget.updatedContact?.phone,
+            
+            decoration: InputDecoration(
+              labelText: 'Phone',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5)
+              ),
+              prefixIcon: Icon(Icons.phone),
+              hintText: '+2250612345678',
+            ),
+            
+            keyboardType: TextInputType.phone,
+          ),
+          
+          SizedBox(
+            height: 10,
+          ),
+          
+          ElevatedButton(
+            onPressed: _onSaveContactButtonPressed,
+            
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              minimumSize: Size(double.infinity, 50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.person, 
+                  size: 18,
+                ),
+                Text(
+                  'Create Contact',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18
+                  ),
+                ),
+              ]
+            )
+          )
+        ],
+      )
+    );
+  }
+
+  Widget _buildContactPicture() {
+    final halfScreenDiameter = MediaQuery.of(context).size.width / 2;
+    
+    return Hero(
+      tag: widget.updatedContact?.hashCode ?? 0, 
+      child: GestureDetector(
+        onTap: _onContactPictureTapped,
+        child: CircleAvatar(
+          radius: halfScreenDiameter / 2,
+          child: _buildCircleAvatrContent(halfScreenDiameter)
+        ),
+      ),
+    );
+  }
+
+  void _onContactPictureTapped() async {
+    final imageFile = await ImagePicker.pickImge(source: ImageSource.gallery);
+    
+    setState(() {
+      _contactImageFile = imageFile;
+    });
+  }
+
+  Widget _buildCircleAvatrContent(double halfScreenDiameter) {
+    if (isUpdatedMode || hasSelectedCustomImage) {
+      return _buildUpdatedModeCircleAvatarContent(halfScreenDiameter);
+    } else {
+      return Icon(
+        Icons.person, 
+        size: halfScreenDiameter / 2,
+      );
+    }
+    
+  }
+
+  Widget _buildUpdatedModeCircleAvatarContent(double halfScreenDiameter) {
+    if (_contactImageFile == null) {
+      return Text(
+        widget.updatedContact!.name[0],
+        style: TextStyle(
+          fontSize: halfScreenDiameter / 2
+        ),
+      );
+    } else {
+      return ClipOval(
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: Image.file(
+            _contactImageFile!,
+            fit: BoxFit.cover,
+          ),
+        ) 
+      );
+    }
+  }
+
+  void _onSaveContactButtonPressed() {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Contact créé avec succès!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      final newContact = Contact(
+        name: _name!, 
+        email: _email!, 
+        phone: _phone!,
+        isFavorite: widget.updatedContact?.isFavorite ?? false,
+        imageFile: _contactImageFile
+      );
+
+      if (isUpdatedMode) {
+        ScopedModel.of<ContactModel>(context).addContact(
+          newContact,
+          widget.updatedConatctIndex
+        );
+      } else {
+        ScopedModel.of<ContactModel>(context).addContact(newContact);
+      }
+
+      // revenir a la page precedente
+      Navigator.of(context).pop();
+                
+      // ignore: avoid_print
+      print('Name: $_name, Email: $_email, Phone: $_phone');
+    }
+  }
+}
+```
+
+### Pré-remplissage d'une image modifiée dans la page de modification des contacts
+
+```dart
+// ui/form
+
+import 'package:libphonenumber/libphonenumber.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+
+
+class ContatctForm extends StatefulWidget {
+  final Contact? updatedContact;
+  final int? updatedConatctIndex;
+
+  const ContatctForm({
+    super.key,
+    this.updatedContact,
+    this.updatedConatctIndex
+  });
+
+  @override
+  // ignore: library_private_types_in_public_api
+  _ContactFormState createState() => _ContactFormState();
+}
+
+
+class _ContactFormState extends State<ContatctForm> {
+  final _formKey = GlobalKey<FormState>();
+
+  final _emailController = TextEditingController();
+
+  String? _name;
+  String? _email;
+  String? _phone;
+  File? _contactImageFile;
+
+  bool get isUpdatedMode => widget.updatedContact != null;
+  bool get hasSelectedCustomImage => _contactImageFile != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController.addListener(() {
+      // Validation en temps réel
+      _email = _emailController.text;
+      // Faire quelque chose avec l'email
+    });
+
+    _contactImageFile = widget.updatedContact?.imageFile;
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  String? _validateName(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer un Nom';
+    }
+
+    if (value.length <= 4) {
+      return 'le Nom doit etre d\'au moins 4 lettre';
+    }
+    return null; // Retourner null signifie que la validation a réussi
+  }
+  
+
+  String? _validateEmail(String? value) {
+    final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    
+    if (value == null || value.isEmpty) {
+      return 'Veuillez entrer un Email';
+    }
+    
+    if (!emailRegExp.hasMatch(value)) {
+      return 'Veuillez entrer un email valide';
+    }
+
+    return null;
+  }
+
+
+  String? _validatePhone(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Le téléphone est requis';
+    }
+  
+    // Pour la France (FR)
+    bool isValid = PhoneNumberUtil.isValidPhoneNumber(
+      phoneNumber: value,
+      isoCode: 'FR',
+    );
+  
+    if (!isValid) {
+      return 'Numéro de téléphone invalide';
+    }
+  
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Form(
+      key: _formKey,
+      child: ListView(
+        children: <Widget>[
+          SizedBox(
+            height: 10,
+          ),
+
+          _buildContactPicture(),
+
+          SizedBox(
+            height: 10,
+          ),
+          
+          TextFormField(
+            onSaved: (value) => _name = value,
+            validator: _validateName,
+            initialValue: widget.updatedContact?.name,
+            
+            decoration: InputDecoration(
+              labelText: 'Name',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5)
+              ),
+              prefixIcon: Icon(Icons.person),
+            ),
+          ),
+          
+          SizedBox(
+            height: 10,
+          ),
+          
+          TextFormField(
+            controller: _emailController,
+            validator: _validateEmail,
+            onSaved: (value) => _email = value,
+            initialValue: widget.updatedContact?.email,
+            
+            decoration: InputDecoration(
+              labelText: 'Email',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5)
+              ),
+              prefixIcon: Icon(Icons.email),
+              hintText: 'exemple@domaine.com',
+            ),
+            
+            keyboardType: TextInputType.emailAddress,
+          ),
+          
+          SizedBox(
+            height: 10,
+          ),
+          
+          TextFormField(
+            validator: _validatePhone,
+            onSaved: (value) => _phone = value,
+            initialValue: widget.updatedContact?.phone,
+            
+            decoration: InputDecoration(
+              labelText: 'Phone',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5)
+              ),
+              prefixIcon: Icon(Icons.phone),
+              hintText: '+2250612345678',
+            ),
+            
+            keyboardType: TextInputType.phone,
+          ),
+          
+          SizedBox(
+            height: 10,
+          ),
+          
+          ElevatedButton(
+            onPressed: _onSaveContactButtonPressed,
+            
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
+              minimumSize: Size(double.infinity, 50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.person, 
+                  size: 18,
+                ),
+                Text(
+                  'Create Contact',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18
+                  ),
+                ),
+              ]
+            )
+          )
+        ],
+      )
+    );
+  }
+
+  Widget _buildContactPicture() {
+    final halfScreenDiameter = MediaQuery.of(context).size.width / 2;
+    
+    return Hero(
+      tag: widget.updatedContact?.hashCode ?? 0, 
+      child: GestureDetector(
+        onTap: _onContactPictureTapped,
+        child: CircleAvatar(
+          radius: halfScreenDiameter / 2,
+          child: _buildCircleAvatrContent(halfScreenDiameter)
+        ),
+      ),
+    );
+  }
+
+  void _onContactPictureTapped() async {
+    final imageFile = await ImagePicker.pickImge(source: ImageSource.gallery);
+    
+    setState(() {
+      _contactImageFile = imageFile;
+    });
+  }
+
+  Widget _buildCircleAvatrContent(double halfScreenDiameter) {
+    if (isUpdatedMode || hasSelectedCustomImage) {
+      return _buildUpdatedModeCircleAvatarContent(halfScreenDiameter);
+    } else {
+      return Icon(
+        Icons.person, 
+        size: halfScreenDiameter / 2,
+      );
+    }
+    
+  }
+
+  Widget _buildUpdatedModeCircleAvatarContent(double halfScreenDiameter) {
+    if (_contactImageFile == null) {
+      return Text(
+        widget.updatedContact!.name[0],
+        style: TextStyle(
+          fontSize: halfScreenDiameter / 2
+        ),
+      );
+    } else {
+      return ClipOval(
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: Image.file(
+            _contactImageFile!,
+            fit: BoxFit.cover,
+          ),
+        ) 
+      );
+    }
+  }
+
+  void _onSaveContactButtonPressed() {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Contact créé avec succès!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      final newContact = Contact(
+        name: _name!, 
+        email: _email!, 
+        phone: _phone!,
+        isFavorite: widget.updatedContact?.isFavorite ?? false,
+        imageFile: _contactImageFile
+      );
+
+      if (isUpdatedMode) {
+        ScopedModel.of<ContactModel>(context).addContact(
+          newContact,
+          widget.updatedConatctIndex
+        );
+      } else {
+        ScopedModel.of<ContactModel>(context).addContact(newContact);
+      }
+
+      // revenir a la page precedente
+      Navigator.of(context).pop();
+                
+      // ignore: avoid_print
+      print('Name: $_name, Email: $_email, Phone: $_phone');
+    }
+  }
+}
+```
+
